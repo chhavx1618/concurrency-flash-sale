@@ -53,4 +53,37 @@ func (c *Client) writeFrame(msgType byte, payload []byte) error {
 	return err
 }
 
+func (c *Client) readFrame() (byte, []byte, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// TYPE
+	typeBuf := make([]byte, 1)
+	if _, err := io.ReadFull(c.conn, typeBuf); err != nil {
+		return 0, nil, err
+	}
+
+	// LENGTH
+	lenBuf := make([]byte, 4)
+	if _, err := io.ReadFull(c.conn, lenBuf); err != nil {
+		return 0, nil, err
+	}
+	length := binary.BigEndian.Uint32(lenBuf)
+
+	// PAYLOAD
+	payload := make([]byte, length)
+	if _, err := io.ReadFull(c.conn, payload); err != nil {
+		return 0, nil, err
+	}
+
+	return typeBuf[0], payload, nil
+}
+
+func (c *Client) AttemptPurchase(ProdID, UserID string) (*PurchaseResp, error) {
+
+}
+
 //readframe, write frame. then attempt purchase, then close
+func (c *Client) Close() error {
+	return c.conn.Close()
+}
